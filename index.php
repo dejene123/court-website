@@ -1,0 +1,923 @@
+<?php
+// Database connection to shaggar_court_db
+$host = 'localhost';
+$db   = 'shaggar_court_db';
+$user = 'root';
+$pass = '';
+$charset = 'utf8mb4';
+
+$dsn = "mysql:host=$host;dbname=$db;charset=$charset";
+$options = [
+    PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+    PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::ATTR_EMULATE_PREPARES   => false,
+];
+
+try {
+    $pdo = new PDO($dsn, $user, $pass, $options);
+} catch (\PDOException $e) {
+    die("Database connection failed: " . $e->getMessage());
+}
+
+// Fetch exactly 3 images from the slides table in order
+try {
+    $stmt = $pdo->query("SELECT * FROM slides ORDER BY id ASC LIMIT 3");
+    $slides = $stmt->fetchAll();
+} catch (\PDOException $e) {
+    $slides = [];
+}
+
+// Fetch news items from the news table selecting publish_date, title, image_path, content, and id
+try {
+    $stmtNews = $pdo->query("SELECT id, publish_date, title, image_path, content FROM news ORDER BY publish_date DESC, id DESC LIMIT 4");
+    $newsItems = $stmtNews->fetchAll();
+} catch (\PDOException $e) {
+    $newsItems = [];
+}
+?>
+<!DOCTYPE html>
+<html lang="om">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mana Murtii Ol'aanaa Magaalaa Shaashamannee / Shaashamannee City High Court</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts: Inter & Roboto -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            blue: '#003B73',
+                            darkBlue: '#0A2540',
+                            navy: '#0d1b2a',
+                            lightBlue: '#0080FF',
+                            accentYellow: '#FFC700',
+                            green: '#009933',
+                            footerBg: '#002855',
+                            footerBottom: '#001D3D'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            color: #333333;
+            /* Add padding to prevent content from hiding behind the fixed header/nav */
+            padding-top: 110px; 
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #003B73;
+            border-radius: 4px;
+        }
+
+        /* Card Yellow Glow Frame Effect */
+        .yellow-frame-card {
+            border: 2px solid #FFC700;
+            transition: all 0.3s ease;
+        }
+        .yellow-frame-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.25);
+        }
+
+        /* Service Card Styling */
+        .service-card {
+            background: #0A3B75;
+            transition: all 0.3s ease;
+        }
+        .service-card:hover {
+            background: #002D5E;
+            transform: translateY(-3px);
+        }
+
+        /* Custom Calendar Grid */
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            text-align: center;
+        }
+
+        /* Slow Zoom-In / Zoom-Out Animation for Slideshow */
+        @keyframes zoomInOut {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.08);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .slide-zoom {
+            animation: zoomInOut 7s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex flex-col min-h-screen">
+
+    <!-- FIXED WRAPPER FOR HEADER & NAVBAR -->
+    <div class="fixed top-0 left-0 w-full z-50 shadow-md">
+        <!-- TOP HEADER BAR -->
+        <header class="bg-white border-b border-gray-400">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-4">
+                
+                <!-- Logo & Title -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-brand-blue p-0.5 flex items-center justify-center bg-blue-50 shrink-0">
+                        <i class="fa-solid fa-scale-balanced text-brand-blue text-xl sm:text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xs sm:text-base lg:text-lg font-bold text-brand-blue leading-tight">
+                            Mana Murtii Ol'aanaa Magaalaa Shaashamannee
+                        </h1>
+                        <p class="text-[16px] sm:text-xs lg:text-sm font-semibold text-gray-600">
+                            Shaashamannee City High Court
+                        </p>
+						<p class="text-[16px] sm:text-xs lg:text-sm font-semibold text-gray-600">
+                            የሻሸመኔ ከተማ ከፍተኛ ፍርድ ቤት
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Call, Action Buttons & Mobile Menu Toggle -->
+                <div class="flex items-center space-x-2 sm:space-x-3">
+                    <div class="border-2 border-red-500 rounded-full px-2.5 py-1 flex items-center space-x-1.5 text-red-600 font-bold text-xs sm:text-sm">
+                        <i class="fa-solid fa-phone-volume animate-pulse"></i>
+                        <span>6902</span>
+                    </div>
+
+                    <a href="#ecourt" class="hidden md:flex bg-brand-blue hover:bg-blue-900 text-white font-semibold text-sm px-4 py-1.5 rounded-full border border-blue-400 shadow transition items-center space-x-2">
+                        <i class="fa-solid fa-gavel"></i>
+                        <span>E-Court</span>
+                    </a>
+
+                    <!-- Mobile Menu Click Button -->
+                    <button id="menu-toggle" onclick="toggleMenu()" class="md:hidden bg-brand-blue text-yellow-400 p-2 rounded-lg focus:outline-none hover:bg-blue-900 transition" aria-label="Toggle Menu">
+                        <i id="menu-icon" class="fa-solid fa-bars text-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN NAVIGATION BAR -->
+        <nav>
+        <?php 
+        
+            require_once('header.php');
+
+        ?>
+    </nav>
+    </div>
+
+    <!-- JAVASCRIPT FOR TOGGLING STATIC MENU -->
+    <script>
+        function toggleMenu() {
+            const menu = document.getElementById('nav-menu');
+            const icon = document.getElementById('menu-icon');
+            
+            // Toggle visibility and change icon from bars to close (X)
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+                menu.classList.add('flex');
+                icon.classList.remove('fa-bars');
+                icon.classList.add('fa-xmark');
+            } else {
+                menu.classList.add('hidden');
+                menu.classList.remove('flex');
+                icon.classList.remove('fa-xmark');
+                icon.classList.add('fa-bars');
+            }
+        }
+    </script>
+
+    <!-- HERO CAROUSEL SECTION WITH DYNAMIC DATABASE SLIDESHOW -->
+    <section class="relative w-full bg-gray-600 h-72 sm:h-96 lg:h-[700px] overflow-hidden border-b-4 border-yellow-500">
+        <div id="database-slideshow" class="absolute inset-0 w-full h-full">
+            <?php if (!empty($slides)): ?>
+                <?php foreach ($slides as $index => $slide): ?>
+                    <?php 
+                        // Resolve image column name dynamically
+                        $slideImg = $slide['image_path'] ?? $slide['image_url'] ?? $slide['photo_url'] ?? $slide['image'] ?? '';
+                        $slideTitle = $slide['title'] ?? 'Mana Murtii Ol\'aanaa Magaalaa Shaashamannee';
+                        $slideDesc = $slide['caption'] ?? $slide['image_url'] ?? 'Dedicated to providing transparent, efficient, and accessible legal services to all citizens.';
+                    ?>
+                    <div class="slide absolute inset-0 w-full h-full transition-opacity duration-1000 ease-in-out <?= $index === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0' ?>">
+                        <img src="<?= htmlspecialchars($slideImg) ?>" 
+                             alt="Court Slide Image" 
+                             class="w-full h-full object-cover opacity-90 slide-zoom"
+                             onerror="this.src='https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1600&q=80'">
+                        
+                        <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end">
+                            <div class="max-w-7xl mx-auto px-6 py-8 w-full text-white">
+                                <span class="bg-yellow-500 text-black text-xs font-bold px-2.5 py-1 rounded">E-Court Services</span>
+                                <h1 class="text-2xl sm:text-4xl font-bold mt-2 drop-shadow-md"><?= htmlspecialchars($slideTitle) ?></h1>
+                                <p class="text-sm sm:text-base text-gray-200 mt-1 max-w-2xl drop-shadow"><?= htmlspecialchars($slideDesc) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <!-- Fallback Slide if no records exist in table slides -->
+                <div class="slide absolute inset-0 w-full h-full opacity-100 z-10">
+                    <img src="https://images.unsplash.com/photo-1589829545856-d10d557cf95f?auto=format&fit=crop&w=1600&q=80" 
+                         alt="Shaashamannee City High Court Building" 
+                         class="w-full h-full object-cover opacity-90 slide-zoom">
+                    
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end">
+                        <div class="max-w-7xl mx-auto px-6 py-8 w-full text-white">
+                           
+                            <h1 class="text-2xl sm:text-4xl font-bold mt-2 drop-shadow-md">Mana Murtii Ol'aanaa Magaalaa Shaashamannee</h1>
+                            <p class="text-sm sm:text-base text-gray-200 mt-1 max-w-2xl drop-shadow">Dedicated to providing transparent, efficient, and accessible legal services to all citizens.</p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Carousel Indicators -->
+        <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-20" id="slide-indicators">
+            <?php if (!empty($slides)): ?>
+                <?php foreach ($slides as $index => $slide): ?>
+                    <button onclick="currentSlide(<?= $index ?>)" class="indicator w-3 h-3 rounded-full <?= $index === 0 ? 'bg-yellow-400' : 'bg-white/50 hover:bg-white' ?> transition"></button>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </section>
+
+    <!-- JavaScript for Slideshow Auto-Rotation & Zoom-in/out Effect -->
+    <script>
+        let slideIndex = 0;
+        const slides = document.querySelectorAll('.slide');
+        const indicators = document.querySelectorAll('.indicator');
+
+        function showSlides() {
+            if (slides.length === 0) return;
+            
+            slides.forEach((slide, i) => {
+                slide.classList.remove('opacity-100', 'z-10');
+                slide.classList.add('opacity-0', 'z-0');
+            });
+
+            indicators.forEach(ind => {
+                ind.classList.remove('bg-yellow-400');
+                ind.classList.add('bg-white/50');
+            });
+
+            slideIndex++;
+            if (slideIndex > slides.length) { slideIndex = 1; }
+
+            slides[slideIndex - 1].classList.remove('opacity-0', 'z-0');
+            slides[slideIndex - 1].classList.add('opacity-100', 'z-10');
+
+            if(indicators[slideIndex - 1]) {
+                indicators[slideIndex - 1].classList.remove('bg-white/50');
+                indicators[slideIndex - 1].classList.add('bg-yellow-400');
+            }
+
+            setTimeout(showSlides, 5000); // Change image every 5 seconds
+        }
+
+        function currentSlide(n) {
+            slideIndex = n;
+            slides.forEach((slide, i) => {
+                if (i === n) {
+                    slide.classList.remove('opacity-0', 'z-0');
+                    slide.classList.add('opacity-100', 'z-10');
+                } else {
+                    slide.classList.remove('opacity-100', 'z-10');
+                    slide.classList.add('opacity-0', 'z-0');
+                }
+            });
+            indicators.forEach((ind, i) => {
+                if (i === n) {
+                    ind.classList.remove('bg-white/50');
+                    ind.classList.add('bg-yellow-400');
+                } else {
+                    ind.classList.remove('bg-yellow-400');
+                    ind.classList.add('bg-white/50');
+                }
+            });
+        }
+
+        if (slides.length > 1) {
+            setTimeout(showSlides, 5000);
+        }
+    </script>
+
+    <!-- ODEEFFANNOOLEE HAARAA (LATEST NEWS) SECTION -->
+    <section class="bg-brand-blue py-10 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center mb-8">
+                <h2 class="text-2xl sm:text-3xl font-bold uppercase tracking-wide">Odeeffannoolee Haaraa</h2>
+                <div class="w-24 h-1 bg-yellow-400 mx-auto mt-2 rounded-full"></div>
+            </div>
+
+            <!-- News Grid 4 Columns -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                
+                <?php if (!empty($newsItems)): ?>
+                    <?php foreach ($newsItems as $news): ?>
+                        <div class="yellow-frame-card bg-brand-navy rounded-lg overflow-hidden flex flex-col justify-between p-3">
+                            <div>
+                                <div class="relative h-40 overflow-hidden rounded mb-3">
+                                    <img src="<?= htmlspecialchars($news['image_path'] ?? 'https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=600&q=80') ?>" alt="News Image" class="w-full h-full object-cover" onerror="this.src='https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=600&q=80'">
+                                    <span class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded"><?= htmlspecialchars($news['publish_date'] ?? '') ?></span>
+                                </div>
+                                <h3 class="text-sm font-bold leading-snug line-clamp-2 text-white mb-2"><?= htmlspecialchars($news['title'] ?? '') ?></h3>
+                                <p class="text-xs text-gray-300 line-clamp-3 mb-4"><?= htmlspecialchars(strip_tags($news['content'] ?? '')) ?></p>
+                            </div>
+                            <a href="news.php?id=<?= $news['id'] ?>" class="w-full text-center py-1.5 rounded-full border border-gray-400 text-xs font-semibold hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition block">Read More</a>
+                        </div>
+                    <?php endforeach; ?>
+                <?php else: ?>
+                    <!-- Fallback Static News Cards if database table is empty -->
+                    <div class="yellow-frame-card bg-brand-navy rounded-lg overflow-hidden flex flex-col justify-between p-3">
+                        <div>
+                            <div class="relative h-40 overflow-hidden rounded mb-3">
+                                <img src="https://images.unsplash.com/photo-1556157382-97eda2d62296?auto=format&fit=crop&w=600&q=80" alt="News Image" class="w-full h-full object-cover">
+                                <span class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">16 OCT 2026</span>
+                            </div>
+                            <h3 class="text-sm font-bold leading-snug line-clamp-2 text-white mb-2">Marii wajjin hojii Mana Murtii Ol'aanaa Magaalaa Shaashamannee...</h3>
+                            <p class="text-xs text-gray-300 line-clamp-3 mb-4">Marii fi leenjii hojjettoota mana murtichaaf kenname irratti haala raawwii hojii fi tajaajila abbaa seeraa fooyyessuu...</p>
+                        </div>
+                        <a href="#" class="w-full text-center py-1.5 rounded-full border border-gray-400 text-xs font-semibold hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition block">Read More</a>
+                    </div>
+
+                    <div class="yellow-frame-card bg-brand-navy rounded-lg overflow-hidden flex flex-col justify-between p-3">
+                        <div>
+                            <div class="relative h-40 overflow-hidden rounded mb-3">
+                                <img src="https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=600&q=80" alt="News Image" class="w-full h-full object-cover">
+                                <span class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">12 OCT 2026</span>
+                            </div>
+                            <h3 class="text-sm font-bold leading-snug line-clamp-2 text-white mb-2">Sirna Badhaasaa fi Beekamtii Kennuu Hojjettootaa...</h3>
+                            <p class="text-xs text-gray-300 line-clamp-3 mb-4">Hojjettoota raawwii hojii fooyya'aa galmeessisaniif beekamtii fi badhaasni addaa kennameera...</p>
+                        </div>
+                        <a href="#" class="w-full text-center py-1.5 rounded-full border border-gray-400 text-xs font-semibold hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition block">Read More</a>
+                    </div>
+
+                    <div class="yellow-frame-card bg-brand-navy rounded-lg overflow-hidden flex flex-col justify-between p-3">
+                        <div>
+                            <div class="relative h-40 overflow-hidden rounded mb-3">
+                                <img src="https://images.unsplash.com/photo-1577962917302-cd874c4e31d2?auto=format&fit=crop&w=600&q=80" alt="News Image" class="w-full h-full object-cover">
+                                <span class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">05 OCT 2026</span>
+                            </div>
+                            <h3 class="text-sm font-bold leading-snug line-clamp-2 text-white mb-2">Leenjii Dandeettii Cimsannaa Tajaajila Abbaa Seeraa...</h3>
+                            <p class="text-xs text-gray-300 line-clamp-3 mb-4">Abbootii seeraaf leenjiin dandeettii cimsu seeraa fi teeknoolojii sa'aatii muraasaaf kenname...</p>
+                        </div>
+                        <a href="#" class="w-full text-center py-1.5 rounded-full border border-gray-400 text-xs font-semibold hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition block">Read More</a>
+                    </div>
+
+                    <div class="yellow-frame-card bg-brand-navy rounded-lg overflow-hidden flex flex-col justify-between p-3">
+                        <div>
+                            <div class="relative h-40 overflow-hidden rounded mb-3">
+                                <img src="https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&w=600&q=80" alt="News Image" class="w-full h-full object-cover">
+                                <span class="absolute top-2 left-2 bg-yellow-500 text-black text-[10px] font-bold px-2 py-0.5 rounded">28 SEP 2026</span>
+                            </div>
+                            <h3 class="text-sm font-bold leading-snug line-clamp-2 text-white mb-2">Duula Tele-Thon Mana Murtii Magaalaa Shaashamannee...</h3>
+                            <p class="text-xs text-gray-300 line-clamp-3 mb-4">Tajaajila teeknoolojiin deeggarame babal'isuuf sagantaan galii walitti qabuu milkaa'inaan raawwatame...</p>
+                        </div>
+                        <a href="#" class="w-full text-center py-1.5 rounded-full border border-gray-400 text-xs font-semibold hover:bg-yellow-500 hover:text-black hover:border-yellow-500 transition block">Read More</a>
+                    </div>
+                <?php endif; ?>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- PRESIDENT MESSAGE SECTION -->
+    <section class="py-12 bg-gray-50 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-xl sm:text-2xl font-bold text-brand-blue mb-6 border-l-4 border-yellow-500 pl-3">
+                Pirezidaantii Mana Murtichaa
+            </h2>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden p-6 lg:p-8 flex flex-col md:flex-row gap-8 items-center">
+                <!-- President Portrait -->
+                <div class="w-full md:w-2/5 shrink-0">
+                    <img src="img/yuu.jpg" 
+                         alt="Obbo Kumalaa Buusaa Fedhasaa" 
+                         class="w-full h-auto rounded-lg shadow border border-gray-200 object-cover max-h-[380px]"
+                         onerror="this.src='https://placehold.co/600x700/003B73/FFF?text=President+Photo'">
+                </div>
+
+                <!-- President Statement -->
+                <div class="w-full md:w-3/5">
+                    <h3 class="text-2xl font-bold text-gray-900">Obbo Yuusuf Qaalluu Absuu</h3>
+                    <p class="text-sm font-semibold text-brand-blue mb-4">Pirezidaantii Mana Murtii Ol'aanaa Magaalaa Shaashamannee</p>
+
+                    <p class="text-sm text-gray-700 leading-relaxed font-semibold mb-3">
+                        "Akkuma beekamu manni murtii tajaajila haqaa si'ataafi qulqullina qabu uummataaf kennuu irratti xiyyeeffannoo guddaa kennee hojjechaa jira."
+                    </p>
+
+                    <p class="text-xs text-gray-600 leading-relaxed mb-4 text-justify">
+                        Manni Murtii Ol'aanaa Magaalaa Shaashamannee tajaajila haqaa uummataaf dhaqqabamaa, haqa-qabeessa fi hojmaata teeknoolojiin deeggarame diriorsuudhaan itti quofinsa uummataa mirkaneessuuf kutannoodhaan hojjechaa jira. Tajaajila Keenya uummataaf dhiyessuuf sirna E-Court fi tajaajiloota dijitaalaa garagaraa diriorsinee hojiirra oolchaa jirra. Manni murtichaa sirna abbaa seeraa bilisaa fi haqa-qabeessa ta'e diriorsuudhaan seerri fi heerri akka kabajamu gahee isaa bahachaa jira.
+                    </p>
+
+                    <a href="#" class="inline-block text-xs font-bold text-brand-blue hover:text-blue-800 hover:underline">
+                        read More &rarr;
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TWIN CALENDARS SECTION -->
+    <section class="py-10 bg-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Calendar 1 (Gregorian / Standard) -->
+                <div class="bg-brand-blue rounded-xl text-white p-5 shadow-md">
+                    <div id="gregorian-title" class="text-center font-bold text-lg border-b border-blue-400/40 pb-3 mb-4">
+                        October 2026
+                    </div>
+                    
+                    <!-- Days Header -->
+                    <div class="calendar-grid text-xs font-bold text-yellow-400 mb-2">
+                        <div>SUN</div><div>MON</div><div>TUE</div><div>WED</div><div>THU</div><div>FRI</div><div>SAT</div>
+                    </div>
+
+                    <!-- Dates Grid -->
+                    <div id="gregorian-grid" class="calendar-grid text-xs font-medium gap-y-2">
+                        <!-- Dynamic Gregorian Dates injected here -->
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-blue-400/40 text-center text-xs text-yellow-300">
+                        <button id="greg-prev" onclick="changeGregorianMonth(-1)" class="hover:underline bg-transparent border-0 text-yellow-300 cursor-pointer">&laquo; Prev</button> | <button id="greg-next" onclick="changeGregorianMonth(1)" class="hover:underline bg-transparent border-0 text-yellow-300 cursor-pointer">Next &raquo;</button>
+                    </div>
+                </div>
+
+                <!-- Calendar 2 (Ethiopian Calendar with Oromo/Ethiopian Month & Day Names) -->
+                <div class="bg-brand-blue rounded-xl text-white p-5 shadow-md">
+                    <div id="ethiopian-title" class="text-center font-bold text-lg border-b border-blue-400/40 pb-3 mb-4">
+                        Onkololeessa 2019
+                    </div>
+
+                    <!-- Oromo Days Header -->
+                    <div class="calendar-grid text-[10px] sm:text-xs font-bold text-yellow-400 mb-2">
+                        <div>DIL</div><div>WIX</div><div>QIB</div><div>ROB</div><div>KAM</div><div>JUM</div><div>SAB</div>
+                    </div>
+
+                    <!-- Dates Grid -->
+                    <div id="ethiopian-grid" class="calendar-grid text-xs font-medium gap-y-2">
+                        <!-- Dynamic Ethiopian Dates injected here -->
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-blue-400/40 text-center text-xs text-yellow-300">
+                        <button id="eth-prev" onclick="changeEthiopianMonth(-1)" class="hover:underline bg-transparent border-0 text-yellow-300 cursor-pointer">&laquo; Prev</button> | <button id="eth-next" onclick="changeEthiopianMonth(1)" class="hover:underline bg-transparent border-0 text-yellow-300 cursor-pointer">Next &raquo;</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- JavaScript for Dynamic Calendars -->
+    <script>
+        // Gregorian state
+        let currentGregDate = new Date();
+        
+        // Ethiopian months in Oromo/Amharic traditional naming matching context
+        const ethiopianMonthNames = [
+            "Fuulbana", "Onkololeessa", "Sadaasa", "Ammajjii", "Gurraandhala", "Bitootessa",
+            "Elba", "Caamsaa", "Waxabajjii", "Adooleessa", "Hagayya", "Phaagume"
+        ];
+
+        // Helper to convert Gregorian Date to Ethiopian Date approximate mapping
+        function gregorianToEthiopian(gYear, gMonth, gDay) {
+            let gDate = new Date(gYear, gMonth, gDay);
+            let jd = Math.floor((gDate.getTime() / (1000 * 60 * 60 * 24)) + 2440587.5);
+            let r = (jd - 1723856) % 1461;
+            let n = (r % 365) + Math.floor(r / 1460) * 365;
+            let eYear = 4 * Math.floor((jd - 1723856) / 1461) + Math.floor(r / 365) - Math.floor(r / 1460);
+            let eMonth = Math.floor(n / 30) + 1;
+            let eDay = (n % 30) + 1;
+            if (eMonth > 13) eMonth = 13;
+            return { year: eYear, month: eMonth, day: eDay };
+        }
+
+        function renderGregorianCalendar() {
+            const year = currentGregDate.getFullYear();
+            const month = currentGregDate.getMonth();
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            document.getElementById('gregorian-title').innerText = `${monthNames[month]} ${year}`;
+
+            const firstDayIndex = new Date(year, month, 1).getDay();
+            const totalDays = new Date(year, month + 1, 0).getDate();
+            const prevTotalDays = new Date(year, month, 0).getDate();
+
+            let gridHTML = '';
+            let today = new Date();
+
+            // Previous month trailing days
+            for (let i = firstDayIndex - 1; i >= 0; i--) {
+                gridHTML += `<div class="text-gray-400">${prevTotalDays - i}</div>`;
+            }
+
+            // Current month days
+            for (let day = 1; day <= totalDays; day++) {
+                let isToday = (day === today.getDate() && month === today.getMonth() && year === today.getFullYear());
+                if (isToday) {
+                    gridHTML += `<div class="bg-yellow-400 text-brand-blue font-bold rounded-md py-1">${day}</div>`;
+                } else {
+                    gridHTML += `<div>${day}</div>`;
+                }
+            }
+
+            // Next month leading days to complete grid rows
+            let totalCells = firstDayIndex + totalDays;
+            let nextDaysCount = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
+            for (let day = 1; day <= nextDaysCount; day++) {
+                gridHTML += `<div class="text-gray-400">${day}</div>`;
+            }
+
+            document.getElementById('gregorian-grid').innerHTML = gridHTML;
+            renderEthiopianCalendar();
+        }
+
+        function renderEthiopianCalendar() {
+            // Get 1st of current Gregorian month to determine Ethiopian month and year
+            let year = currentGregDate.getFullYear();
+            let month = currentGregDate.getMonth();
+            
+            let ethFirst = gregorianToEthiopian(year, month, 1);
+            let ethMonthName = ethiopianMonthNames[ethFirst.month - 1] || "Onkololeessa";
+            
+            document.getElementById('ethiopian-title').innerText = `${ethMonthName} ${ethFirst.year}`;
+
+            // Calculate Ethiopian grid days corresponding to the current Gregorian view
+            let firstDayIndex = new Date(year, month, 1).getDay();
+            let totalDays = new Date(year, month + 1, 0).getDate();
+            let prevTotalDays = new Date(year, month, 0).getDate();
+
+            let gridHTML = '';
+            let todayEth = gregorianToEthiopian(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+
+            // Previous days
+            for (let i = firstDayIndex - 1; i >= 0; i--) {
+                let ethDate = gregorianToEthiopian(year, month - 1, prevTotalDays - i);
+                gridHTML += `<div class="text-gray-400">${ethDate.day}</div>`;
+            }
+
+            // Current days
+            for (let day = 1; day <= totalDays; day++) {
+                let ethDate = gregorianToEthiopian(year, month, day);
+                let isTodayEth = (ethDate.day === todayEth.day && ethDate.month === todayEth.month && ethDate.year === todayEth.year);
+                if (isTodayEth) {
+                    gridHTML += `<div class="bg-yellow-400 text-brand-blue font-bold rounded-md py-1">${ethDate.day}</div>`;
+                } else {
+                    gridHTML += `<div>${ethDate.day}</div>`;
+                }
+            }
+
+            // Next days
+            let totalCells = firstDayIndex + totalDays;
+            let nextDaysCount = (totalCells % 7 === 0) ? 0 : 7 - (totalCells % 7);
+            for (let day = 1; day <= nextDaysCount; day++) {
+                let ethDate = gregorianToEthiopian(year, month + 1, day);
+                gridHTML += `<div class="text-gray-400">${ethDate.day}</div>`;
+            }
+
+            document.getElementById('ethiopian-grid').innerHTML = gridHTML;
+        }
+
+        function changeGregorianMonth(direction) {
+            currentGregDate.setMonth(currentGregDate.getMonth() + direction);
+            renderGregorianCalendar();
+        }
+
+        function changeEthiopianMonth(direction) {
+            // Shifting by roughly one month in Gregorian advances Ethiopian month smoothly
+            currentGregDate.setMonth(currentGregDate.getMonth() + direction);
+            renderGregorianCalendar();
+        }
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderGregorianCalendar();
+        });
+    </script>
+
+    <!-- TAJAAJILOOTA KEENYA / OUR PROVIDED SERVICES SECTION -->
+    <section class="py-12 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center mb-10">
+                <h2 class="text-2xl sm:text-3xl font-bold text-brand-blue uppercase">
+                    Tajaajiloota keenya / Our Provided Services
+                </h2>
+                <div class="w-20 h-1 bg-yellow-500 mx-auto mt-2 rounded-full"></div>
+            </div>
+
+            <!-- 6 Services Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Service 1 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-file-contract"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">E-Filing</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Galmee fi iyyannoo keessan karaa intarnaatiin salphaatti galchuudhaan hordoffii gochuu dandeessu.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+                <!-- Service 2 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-language"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Tajaajila Hiikkaa Afaanii</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Tajaajila hiikkaa seeraa fi afaanii afaanota addaddatiin kennuu.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+                <!-- Service 3 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-phone-volume"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Bilbila Tolaa 6902</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Kaffaltii malee sarara bilbilaa bilisaa 6902 irratti bilbiluun odeeffannoo fi komii dhiyeessuun ni danda'ama.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+                <!-- Service 4 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-shield-halved"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Tajaajila Abbaa Seeraa</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Tajaajila seeraa fi falmii haqa-qabeessa uummataaf dhiyeessuu.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+                <!-- Service 5 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-house-chimney"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Land & Asset</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Lafaa fi qabeenya ilaalchisee tajaajila seeraa fi murtoo kennuu.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+                <!-- Service 6 -->
+                <div class="service-card text-white p-6 rounded-xl shadow-lg flex flex-col justify-between items-center text-center">
+                    <div class="w-14 h-14 rounded-full bg-blue-500/20 flex items-center justify-center mb-4 text-yellow-400 text-2xl">
+                        <i class="fa-solid fa-comments"></i>
+                    </div>
+                    <h3 class="text-lg font-bold mb-2">Additional Language Service</h3>
+                    <p class="text-xs text-gray-200 mb-6 leading-relaxed">
+                        Additional language services are provided for court procedures.
+                    </p>
+                    <button class="bg-white text-brand-blue font-bold text-xs px-6 py-2 rounded hover:bg-yellow-400 hover:text-black transition">Translate</button>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- FACEBOOK BANNER & WIDGET -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 my-6">
+        <a href="https://www.facebook.com/profile.php?id=61550199127005" target="_blank" class="block bg-brand-green hover:bg-green-700 text-white font-bold text-center py-3 rounded-t-xl transition shadow">
+            Visit Our Facebook Page
+        </a>
+        <div class="bg-white border border-gray-300 rounded-b-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-brand-blue text-white flex items-center justify-center font-bold text-lg">
+                    <i class="fa-brands fa-facebook-f"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm text-gray-800">Mana Murtii Ol'aanaa Magaalaa Shaashamannee</h4>
+                    <p class="text-xs text-gray-500">8K followers • Official Facebook Page</p>
+                </div>
+            </div>
+            <button class="bg-gray-100 border border-gray-300 hover:bg-gray-200 text-gray-800 text-xs font-semibold px-4 py-1.5 rounded flex items-center space-x-1.5">
+                <i class="fa-brands fa-square-facebook text-blue-600 text-base"></i>
+                <span>Like Page</span>
+            </button>
+        </div>
+    </section>
+
+    <!-- PIREZIDAANTOTA DURAANII (FORMER PRESIDENTS) SLIDER SECTION -->
+    <?php
+// Fetch presidents profile data from the president_profile table
+try {
+    $stmtPresidents = $pdo->query("SELECT photo_url, full_name, role, start_date, end_date FROM president_profile");
+    $presidents = $stmtPresidents->fetchAll();
+} catch (\PDOException $e) {
+    $presidents = [];
+}
+?>
+
+    <!-- Add custom CSS for the image zoom-in/out transition effect and beautiful frame -->
+    <style>
+        .president-img-container {
+            overflow: hidden;
+            border-radius: 0.375rem;
+            border: 3px solid #FFC700; /* Beautiful golden frame */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .president-img-container img {
+            transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+            width: 100%;
+            height: 11rem; /* matches h-44 */
+            object-fit: cover;
+            display: block;
+        }
+
+        .president-img-container:hover img {
+            transform: scale(1.1); /* Zoom in effect */
+        }
+    </style>
+
+    <!-- PIREZIDAANTOTA DURAANII (FORMER PRESIDENTS) SLIDER SECTION -->
+    <section class="py-10 bg-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-xl sm:text-2xl font-bold text-center text-blue-600 mb-8">
+                Pirezidaantota Manneen Murtii Magaalaa Shaashamannee
+            </h2>
+
+            <div class="relative max-w-5xl mx-auto">
+                <!-- Slider Nav Left -->
+                <button class="absolute -left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-brand-blue text-white flex items-center justify-center shadow hover:bg-blue-900">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+
+                <!-- Cards Grid Container -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 px-4">
+                    
+                    <?php if (!empty($presidents)): ?>
+                        <?php foreach ($presidents as $pres): ?>
+                            <div class="bg-white rounded-lg p-3 border border-gray-200 shadow text-center flex flex-col items-center">
+                                <div class="president-img-container w-full mb-2">
+                                    <img src="<?= htmlspecialchars($pres['photo_url'] ?? 'img/default.jpg') ?>" 
+                                         alt="President" 
+                                         onerror="this.src='https://placehold.co/400x400/003B73/FFF?text=President'">
+                                </div>
+                                <h4 class="text-xs font-bold text-gray-900 line-clamp-1"><?= htmlspecialchars($pres['full_name'] ?? '') ?></h4>
+                                <p class="text-[10px] text-gray-600"><?= htmlspecialchars($pres['role'] ?? 'Pirezdaantii') ?></p>
+                                <p class="text-[10px] text-brand-blue font-semibold">
+                                    <?= htmlspecialchars($pres['start_date'] ?? '') ?> - <?= htmlspecialchars($pres['end_date'] ?? 'Now') ?>
+                                </p>
+                            </div>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <!-- Fallback Static Cards if database table is empty -->
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 shadow text-center flex flex-col items-center">
+                            <div class="president-img-container w-full mb-2">
+                                <img src="img/mam.jpg" alt="President">
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-900 line-clamp-1">Obbo Mohammad Kamaal</h4>
+                            <p class="text-[16px] text-gray-600">Pirezdaantii</p>
+                            <p class="text-[14px] text-brand-blue font-semibold">01.01.2023 - Now</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 shadow text-center flex flex-col items-center">
+                            <div class="president-img-container w-full mb-2">
+                                <img src="img/eda.jpg" alt="President">
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-900 line-clamp-1">Obbo Edaasoo Baamud</h4>
+                            <p class="text-[14px] text-gray-600">Pirezdaantii</p>
+                            <p class="text-[14px] text-brand-blue font-semibold">01.07.2023 - Now</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 shadow text-center flex flex-col items-center">
+                            <div class="president-img-container w-full mb-2">
+                                <img src="img/tol.jpg" alt="President">
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-900 line-clamp-1">Obbo Tolosa Girma</h4>
+                            <p class="text-[14px] text-gray-600">Pirezdaantii</p>
+                            <p class="text-[14px] text-brand-blue font-semibold">16.08.2023 - Now</p>
+                        </div>
+
+                        <div class="bg-white rounded-lg p-3 border border-gray-200 shadow text-center flex flex-col items-center">
+                            <div class="president-img-container w-full mb-2">
+                                <img src="img/mun.jpg" alt="President">
+                            </div>
+                            <h4 class="text-xs font-bold text-gray-900 line-clamp-1">Aadde Muniraa Abdulqaadir</h4>
+                            <p class="text-[14px] text-gray-600">Pirezdaantii</p>
+                            <p class="text-[14px] text-brand-blue font-semibold">11.01.2023 - Now</p>
+                        </div>
+                    <?php endif; ?>
+
+                </div>
+
+                <!-- Slider Nav Right -->
+                <button class="absolute -right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-brand-blue text-white flex items-center justify-center shadow hover:bg-blue-900">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    </section>
+
+    <!-- FOOTER SECTION -->
+    <footer class="bg-brand-lightBlue text-white mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 text-xs">
+                
+                <!-- Col 1: Our Services -->
+                <div>
+                    <h4 class="font-bold text-sm uppercase mb-3 border-b border-blue-400 pb-1">Our Services</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>E-Filing</a></li>
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>Tajaajila Abbaa Seeraa</a></li>
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>Court Hearings</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 2: Primary Links -->
+                <div>
+                    <h4 class="font-bold text-sm uppercase mb-3 border-b border-blue-400 pb-1">Primary Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="contact.php" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>contact us</a></li>
+                        <li><a href="laws.php" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>Laws & Publications</a></li>
+                        <li><a href="news.php" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>News</a></li>
+                        <li><a href="about.php" class="hover:underline flex items-center"><i class="fa-solid fa-angle-right mr-1.5 text-yellow-300"></i>About Us</a></li>
+                    </ul>
+                </div>
+
+                <!-- Col 3: Contact Us -->
+                <div>
+                    <h4 class="font-bold text-sm uppercase mb-3 border-b border-blue-400 pb-1">Contact Us</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-center"><i class="fa-solid fa-phone mr-1.5 text-yellow-300"></i>6902 (bilbila tolaa)</li>
+                        <li class="flex items-center"><i class="fa-solid fa-location-dot mr-1.5 text-yellow-300"></i>Shashemene City, Oromia</li>
+                        <li class="flex items-center"><i class="fa-solid fa-envelope mr-1.5 text-yellow-300"></i>mmoshhrm@gmail.com</li>
+                    </ul>
+                </div>
+
+                <!-- Col 4: Social Media Links -->
+                <div>
+                    <h4 class="font-bold text-sm uppercase mb-3 border-b border-blue-400 pb-1">Social Media Links</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-brands fa-facebook mr-1.5 text-yellow-300"></i>Facebook</a></li>
+                        <li><a href="https://t.me/mmo_mag_shshmne" class="hover:underline flex items-center"><i class="fa-brands fa-telegram mr-1.5 text-yellow-300"></i>Telegram</a></li>
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-brands fa-youtube mr-1.5 text-yellow-300"></i>YouTube</a></li>
+                        <li><a href="#" class="hover:underline flex items-center"><i class="fa-brands fa-x-twitter mr-1.5 text-yellow-300"></i>X (Twitter)</a></li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Copyright Strip -->
+        <div class="bg-brand-footerBottom text-center py-3 text-[11px] text-gray-300 border-t border-blue-900">
+            &copy; 2026 Mana Murtii Ol'aanaa Magaalaa Shaashamannee / Shaashamannee City High Court. | Hotline: 6902 | Email: mmoshhrm@gmail.com
+        </div>
+    </footer>
+
+    <?php
+    if (file_exists('index.html')) {
+        include('index.html');
+    }
+    ?>
+
+</body>
+</html>
